@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from app.database import supabase
-
+from app.schemas import PatientCreate, PatientResponse
 
 router = APIRouter(
     prefix="/patients",
@@ -9,22 +9,13 @@ router = APIRouter(
 )
 
 
-class PatientCreate(BaseModel):
-    patient_id: str
-    name: str
-    age: int
-    gender: str
-    language: str = "en"
-
-
-@router.post("/")
+@router.post("/", response_model=PatientResponse)
 def create_patient(patient: PatientCreate):
 
-    # Check if patient already exists
     existing = (
         supabase
         .table("patients")
-        .select("*")
+        .select("patient_id")
         .eq("patient_id", patient.patient_id)
         .execute()
     )
@@ -35,7 +26,6 @@ def create_patient(patient: PatientCreate):
             detail="Patient already exists"
         )
 
-    # Insert patient
     response = (
         supabase
         .table("patients")
@@ -43,19 +33,24 @@ def create_patient(patient: PatientCreate):
         .execute()
     )
 
-    return {
-        "message": "Patient created successfully",
-        "patient": response.data[0]
-    }
+    if not response.data:
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to create patient"
+        )
+
+    return response.data[0]
 
 
-@router.get("/{patient_id}")
+@router.get("/{patient_id}", response_model=PatientResponse)
 def get_patient(patient_id: str):
 
     response = (
         supabase
         .table("patients")
-        .select("*")
+        .select(
+            "patient_id, name, age, gender, language"
+        )
         .eq("patient_id", patient_id)
         .execute()
     )
@@ -68,17 +63,16 @@ def get_patient(patient_id: str):
 
     return response.data[0]
 
-
-@router.get("/")
+@router.get("/", response_model=list[PatientResponse])
 def get_patients():
 
     response = (
         supabase
         .table("patients")
-        .select("*")
+        .select(
+            "patient_id, name, age, gender, language"
+        )
         .execute()
     )
 
-    return {
-        "patients": response.data
-    }
+    return response.data

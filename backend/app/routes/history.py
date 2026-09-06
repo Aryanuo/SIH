@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from app.database import supabase
-
+from app.schemas import PatientHistoryResponse
 
 router = APIRouter(
     prefix="/patients",
@@ -8,14 +8,14 @@ router = APIRouter(
 )
 
 
-@router.get("/{patient_id}/history")
+@router.get("/{patient_id}/history", response_model=PatientHistoryResponse)
 def get_patient_history(patient_id: str):
 
     # Check patient exists
     patient = (
         supabase
         .table("patients")
-        .select("patient_id, name, age, gender")
+        .select("patient_id, name, age, gender, language")
         .eq("patient_id", patient_id)
         .execute()
     )
@@ -30,7 +30,7 @@ def get_patient_history(patient_id: str):
     medical_history = (
         supabase
         .table("medical_history")
-        .select("*")
+        .select("condition, diagnosed_year, notes")
         .eq("patient_id", patient_id)
         .order("diagnosed_year")
         .execute()
@@ -40,7 +40,7 @@ def get_patient_history(patient_id: str):
     medications = (
         supabase
         .table("medications")
-        .select("*")
+        .select("name, dosage, frequency, notes")
         .eq("patient_id", patient_id)
         .execute()
     )
@@ -49,7 +49,7 @@ def get_patient_history(patient_id: str):
     allergies = (
         supabase
         .table("allergies")
-        .select("*")
+        .select("allergen, reaction")
         .eq("patient_id", patient_id)
         .execute()
     )
