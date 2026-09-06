@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from app.database import supabase
-
+import uuid
 
 router = APIRouter(
     prefix="/interview",
@@ -54,7 +54,7 @@ def start_interview(data: InterviewStart):
     else:
         number = 1
 
-    interview_id = f"INT{number:03d}"
+    interview_id = f"INT-{uuid.uuid4().hex[:8].upper()}"
 
     # Create interview
     response = (
